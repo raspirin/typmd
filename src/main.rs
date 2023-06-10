@@ -2,7 +2,17 @@ use std::fs::File;
 use std::io;
 use std::io::Read;
 use pulldown_cmark::escape::StrWrite;
-use pulldown_cmark::{Event, Parser, Tag};
+use pulldown_cmark::{CodeBlockKind, Event, Parser, Tag};
+
+fn fix_lang(raw: &str) -> String {
+    let mut new = raw.to_lowercase();
+
+    if new == "c++".to_string() {
+        new = "cxx".to_string();
+    }
+
+    new
+}
 
 struct Typ<I, W> {
     iter: I,
@@ -103,7 +113,28 @@ where
                 self.write(" ")?;
             }
             Tag::BlockQuote => {}
-            Tag::CodeBlock(_) => {}
+            Tag::CodeBlock(kind) => {
+                if !self.end_newline {
+                    self.open_newline()?;
+                }
+
+                match kind {
+                    CodeBlockKind::Indented => {
+                        self.write("```\n")?;
+                    }
+                    CodeBlockKind::Fenced(info) => {
+                        let lang = info.split(' ').next().unwrap();
+                        let lang = fix_lang(lang);
+
+                        self.write("```")?;
+                        if lang.is_empty() {
+                            self.write("\n")?;
+                        } else {
+                            self.write(&format!("{}\n", lang))?;
+                        }
+                    }
+                }
+            }
             Tag::List(_) => {}
             Tag::Item => {}
             Tag::FootnoteDefinition(_) => {}
@@ -130,7 +161,12 @@ where
                 self.write("\n")?;
             }
             Tag::BlockQuote => {}
-            Tag::CodeBlock(_) => {}
+            Tag::CodeBlock(_) => {
+                if !self.end_newline {
+                    self.open_newline()?;
+                }
+                self.write("```\n")?;
+            }
             Tag::List(_) => {}
             Tag::Item => {}
             Tag::FootnoteDefinition(_) => {}
