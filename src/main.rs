@@ -62,7 +62,7 @@ where
                 }
                 Event::Html(text) => {
                     // TODO: fix html
-                    self.write(&text)?;
+                    self.write(&format!("html:{}", text))?;
                 }
                 Event::FootnoteReference(name) => {
                     // TODO: fix footnote reference
