@@ -68,7 +68,8 @@ where
                     // TODO: fix footnote reference
                     self.write(&format!("footnote_ref:{}", &name))?;
                 }
-                Event::SoftBreak => self.open_newline()?,
+                // TODO: fix soft break
+                Event::SoftBreak => self.write(" \\\n")?,
                 Event::HardBreak => {
                     if self.end_newline {
                         self.write("parbreak()")?;
@@ -99,6 +100,7 @@ where
                 if !self.end_newline {
                     self.write("\n")?;
                 }
+                self.open_newline()?;
             }
             Tag::Heading(level, _, _) => {
                 if self.end_newline {
@@ -106,6 +108,7 @@ where
                 } else {
                     self.write("\n")?;
                 }
+                self.open_newline()?;
 
                 for _ in 1..=(level as i32) {
                     self.write("=")?;
@@ -117,6 +120,7 @@ where
                 if !self.end_newline {
                     self.open_newline()?;
                 }
+                self.open_newline()?;
 
                 match kind {
                     CodeBlockKind::Indented => {
@@ -135,8 +139,25 @@ where
                     }
                 }
             }
-            Tag::List(_) => {}
-            Tag::Item => {}
+            Tag::List(Some(start)) => {
+                if !self.end_newline {
+                    self.open_newline()?;
+                }
+                self.open_newline()?;
+
+                self.write(&format!("#enum(start: {})", start))?;
+            }
+            Tag::List(None) => {
+                if !self.end_newline {
+                    self.open_newline()?;
+                }
+                self.open_newline()?;
+
+                self.write("#list")?;
+            }
+            Tag::Item => {
+                self.write("[")?;
+            }
             Tag::FootnoteDefinition(_) => {}
             Tag::Table(_) => {}
             Tag::TableHead => {}
@@ -167,8 +188,12 @@ where
                 }
                 self.write("```\n")?;
             }
-            Tag::List(_) => {}
-            Tag::Item => {}
+            Tag::List(_) => {
+                self.open_newline()?;
+            }
+            Tag::Item => {
+                self.write("]")?;
+            }
             Tag::FootnoteDefinition(_) => {}
             Tag::Table(_) => {}
             Tag::TableHead => {}
