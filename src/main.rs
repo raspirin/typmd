@@ -68,14 +68,12 @@ where
                     // TODO: fix footnote reference
                     self.write(&format!("footnote_ref:{}", &name))?;
                 }
-                // TODO: fix soft break
-                Event::SoftBreak => self.write(" \\\n")?,
+                Event::SoftBreak => self.write(" ")?,
                 Event::HardBreak => {
-                    if self.end_newline {
-                        self.write("parbreak()")?;
-                    } else {
-                        self.write("\nparbreak()")?;
+                    if !self.end_newline {
+                        self.open_newline()?;
                     }
+                    self.open_newline()?;
                 }
                 Event::Rule => {
                     if self.end_newline {
@@ -163,11 +161,14 @@ where
             Tag::TableHead => {}
             Tag::TableRow => {}
             Tag::TableCell => {}
-            Tag::Emphasis => {}
-            Tag::Strong => {}
-            Tag::Strikethrough => {}
-            Tag::Link(_, _, _) => {}
-            Tag::Image(_, _, _) => {}
+            Tag::Emphasis => self.write("_")?,
+            Tag::Strong => self.write("*")?,
+            Tag::Strikethrough => self.write("#strike[")?,
+            Tag::Link(_, dest, _) => self.write(&format!("#link({dest})["))?,
+            Tag::Image(_, dest, title) => {
+                self.write("#figure[")?;
+                self.write(&format!("#image(\"{dest}\", alt: \""))?;
+            }
         }
 
         Ok(())
@@ -199,11 +200,19 @@ where
             Tag::TableHead => {}
             Tag::TableRow => {}
             Tag::TableCell => {}
-            Tag::Emphasis => {}
-            Tag::Strong => {}
-            Tag::Strikethrough => {}
-            Tag::Link(_, _, _) => {}
-            Tag::Image(_, _, _) => {}
+            Tag::Emphasis => self.write("_")?,
+            Tag::Strong => self.write("*")?,
+            Tag::Strikethrough => self.write("]")?,
+            Tag::Link(_, _, _) => self.write("]")?,
+            Tag::Image(_, _, title) => {
+                self.write("\")")?;
+
+                if !title.is_empty() {
+                    self.write(&format!(", caption: [{title}]"))?;
+                }
+
+                self.write("]")?;
+            }
         }
 
         Ok(())
