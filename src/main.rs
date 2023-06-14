@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io;
 use std::io::Read;
 use pulldown_cmark::escape::StrWrite;
-use pulldown_cmark::{CodeBlockKind, Event, Parser, Tag};
+use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag};
 
 fn fix_lang(raw: &str) -> String {
     let mut new = raw.to_lowercase();
@@ -64,9 +64,8 @@ where
                     // TODO: fix html
                     self.write(&format!("html:{}", text))?;
                 }
-                Event::FootnoteReference(name) => {
+                Event::FootnoteReference(_name) => {
                     // TODO: fix footnote reference
-                    self.write(&format!("footnote_ref:{}", &name))?;
                 }
                 Event::SoftBreak => self.write(" ")?,
                 Event::HardBreak => {
@@ -82,9 +81,8 @@ where
                         self.write("\npagebreak()")?;
                     }
                 }
-                Event::TaskListMarker(yes) => {
+                Event::TaskListMarker(_) => {
                     // TODO: fix task list marker
-                    self.write(&format!("checkbox:{}", yes))?;
                 }
             }
         }
@@ -98,7 +96,6 @@ where
                 if !self.end_newline {
                     self.write("\n")?;
                 }
-                self.open_newline()?;
             }
             Tag::Heading(level, _, _) => {
                 if self.end_newline {
@@ -113,7 +110,13 @@ where
                 }
                 self.write(" ")?;
             }
-            Tag::BlockQuote => {}
+            Tag::BlockQuote => {
+                if self.end_newline {
+                    self.write("#rect(fill: gray)[")?;
+                } else {
+                    self.write("\n#rect(fill: gray)[")?;
+                }
+            }
             Tag::CodeBlock(kind) => {
                 if !self.end_newline {
                     self.open_newline()?;
@@ -182,7 +185,9 @@ where
             Tag::Heading(_, _, _) => {
                 self.write("\n")?;
             }
-            Tag::BlockQuote => {}
+            Tag::BlockQuote => {
+                self.write("]\n")?;
+            }
             Tag::CodeBlock(_) => {
                 if !self.end_newline {
                     self.open_newline()?;
@@ -225,7 +230,8 @@ fn main() {
     let mut input = String::new();
     file.read_to_string(&mut input).unwrap();
 
-    let parser = Parser::new(&input);
+    let opt = Options::all();
+    let parser = Parser::new_ext(&input, opt);
 
     let mut output = String::new();
     let mut tpy = Typ::new(parser, &mut output);
