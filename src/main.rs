@@ -164,7 +164,7 @@ where
             Tag::Emphasis => self.write("_")?,
             Tag::Strong => self.write("*")?,
             Tag::Strikethrough => self.write("#strike[")?,
-            Tag::Link(_, dest, _) => self.write(&format!("#link({dest})["))?,
+            Tag::Link(_, dest, _) => self.write(&format!("#link(\"{dest}\")["))?,
             Tag::Image(_, dest, title) => {
                 self.write("#figure[")?;
                 self.write(&format!("#image(\"{dest}\", alt: \""))?;
